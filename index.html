@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Interactive visualization dashboard for the M5 Walmart Forecasting Competition dataset — explore 30,490 products across 10 stores in 3 states over 1,941 days.">
+  <title>M5 Sales Explorer — Walmart Forecasting Data Visualization</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- ─── HEADER ─────────────────────────────────────────────── -->
+  <header class="app-header" id="header">
+    <div class="header-left">
+      <button class="back-button" id="back-btn" title="Go back" style="display:none;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="header-titles">
+        <nav class="breadcrumb" id="breadcrumb">
+          <span class="breadcrumb-item active" data-level="states">States</span>
+        </nav>
+        <div class="header-info">
+          <span class="header-level" id="level-label">Choose a state to explore</span>
+          <span class="header-detail" id="level-detail">3 states · 10 stores · 30,490 products</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="header-stat">
+        <span class="header-stat-label">Day</span>
+        <span class="header-stat-value"><span id="day-counter">1</span> <span class="header-stat-sub">/ 1941</span></span>
+      </div>
+      <div class="header-stat">
+        <span class="header-stat-label">Date</span>
+        <span class="header-stat-value" id="hdr-date">Jan 29, 2011</span>
+      </div>
+      <div class="header-stat">
+        <span class="header-stat-label">Total Sales</span>
+        <span class="header-stat-value highlight" id="hdr-total">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── MAIN GRID ──────────────────────────────────────────── -->
+  <main class="main" id="main">
+    <!-- Live Sales Plot Card -->
+    <div class="chart-card-wrapper" id="chart-wrapper">
+      <div class="chart-card-header">
+        <div class="chart-title-group">
+          <span class="chart-title" id="chart-title">Daily Sales Trend</span>
+          <span class="chart-subtitle" id="chart-subtitle">Live time series (1,941 Days)</span>
+        </div>
+        <div class="chart-legend" id="chart-legend"></div>
+      </div>
+      <div class="chart-canvas-container">
+        <canvas id="salesChart"></canvas>
+      </div>
+    </div>
+
+    <div class="grid-container grid--large" id="grid">
+      <!-- Tiles rendered dynamically -->
+    </div>
+    <div class="loading" id="loading">
+      <div class="loading-spinner"></div>
+      <p>Loading M5 dataset…</p>
+    </div>
+  </main>
+
+  <!-- ─── TIMELINE FOOTER ────────────────────────────────────── -->
+  <footer class="timeline" id="timeline">
+    <div class="timeline-top">
+      <div class="timeline-controls">
+        <button class="btn btn-play" id="play-btn" title="Play / Pause">
+          <svg id="play-icon" width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+            <polygon points="4,2 16,9 4,16"/>
+          </svg>
+          <svg id="pause-icon" width="18" height="18" viewBox="0 0 18 18" fill="currentColor" style="display:none">
+            <rect x="3" y="2" width="4" height="14" rx="1"/>
+            <rect x="11" y="2" width="4" height="14" rx="1"/>
+          </svg>
+        </button>
+        <button class="btn btn-speed" id="speed-btn" title="Playback speed">1×</button>
+      </div>
+      <div class="slider-wrap">
+        <input type="range" class="slider" id="day-slider" min="0" max="1940" value="0" step="1">
+        <div class="slider-fill" id="slider-fill"></div>
+      </div>
+      <div class="timeline-date" id="timeline-date">Jan 29, 2011</div>
+    </div>
+    <div class="slider-ticks" id="slider-ticks">
+      <!-- Generated dynamically -->
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
