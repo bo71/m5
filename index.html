@@ -14,39 +14,39 @@
 <body>
 
   <!-- ─── HEADER ─────────────────────────────────────────────── -->
-  <header class="app-header" id="header">
-    <div class="header-left">
-      <button class="back-button" id="back-btn" title="Go back" style="display:none;">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <div class="header-titles">
-        <nav class="breadcrumb" id="breadcrumb">
-          <span class="breadcrumb-item active" data-level="states">States</span>
-        </nav>
-        <div class="header-info">
-          <span class="header-level" id="level-label">Choose a state to explore</span>
-          <span class="header-detail" id="level-detail">3 states · 10 stores · 30,490 products</span>
-        </div>
-      </div>
-    </div>
-
+  <header class="header" id="header">
+    <nav class="breadcrumb" id="breadcrumb">
+      <span class="breadcrumb-item active" data-level="states">States</span>
+    </nav>
     <div class="header-right">
-      <div class="header-stat">
-        <span class="header-stat-label">Day</span>
-        <span class="header-stat-value"><span id="day-counter">1</span> <span class="header-stat-sub">/ 1941</span></span>
-      </div>
       <div class="header-stat">
         <span class="header-stat-label">Date</span>
         <span class="header-stat-value" id="hdr-date">Jan 29, 2011</span>
       </div>
       <div class="header-stat">
         <span class="header-stat-label">Total Sales</span>
-        <span class="header-stat-value highlight" id="hdr-total">0</span>
+        <span class="header-stat-value" id="hdr-total">0</span>
       </div>
     </div>
   </header>
+
+  <!-- ─── STATS BAR ──────────────────────────────────────────── -->
+  <div class="stats-bar" id="stats-bar">
+    <button class="back-button" id="back-btn" title="Go back" style="display:none;">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <div class="stats-bar-info">
+      <span class="stats-bar-level" id="level-label">Choose a state to explore</span>
+      <span class="stats-bar-detail" id="level-detail">3 states · 10 stores · 30,490 products</span>
+    </div>
+    <div class="stats-bar-day">
+      <span class="stats-bar-day-label">Day</span>
+      <span class="stats-bar-day-value" id="day-counter">1</span>
+      <span class="stats-bar-day-of">/ 1941</span>
+    </div>
+  </div>
 
   <!-- ─── MAIN GRID ──────────────────────────────────────────── -->
   <main class="main" id="main">

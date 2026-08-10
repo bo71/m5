@@ -540,10 +540,12 @@ function renderChart() {
         data: stateDaily[st].slice(0, currentCount),
         borderColor: COLORS[st],
         backgroundColor: COLORS[st] + '22',
-        borderWidth: 2,
+        borderWidth: 3,
+        borderJoinStyle: 'round',
+        borderCapStyle: 'round',
         fill: true,
         pointRadius: 0,
-        tension: 0.3
+        tension: 0.45
       }));
       legendItems = datasets.map(d => ({ label: d.label, color: d.borderColor }));
       break;
@@ -560,10 +562,12 @@ function renderChart() {
         data: storeDaily[sid].slice(0, currentCount),
         borderColor: storePalette[i % storePalette.length],
         backgroundColor: storePalette[i % storePalette.length] + '22',
-        borderWidth: 2,
+        borderWidth: 3,
+        borderJoinStyle: 'round',
+        borderCapStyle: 'round',
         fill: false,
         pointRadius: 0,
-        tension: 0.3
+        tension: 0.45
       }));
       legendItems = datasets.map(d => ({ label: d.label, color: d.borderColor }));
       break;
@@ -579,10 +583,12 @@ function renderChart() {
         data: categoryDaily[`${storeId}|${catId}`].slice(0, currentCount),
         borderColor: COLORS[catId],
         backgroundColor: COLORS[catId] + '22',
-        borderWidth: 2,
+        borderWidth: 3,
+        borderJoinStyle: 'round',
+        borderCapStyle: 'round',
         fill: true,
         pointRadius: 0,
-        tension: 0.3
+        tension: 0.45
       }));
       legendItems = datasets.map(d => ({ label: d.label, color: d.borderColor }));
       break;
@@ -601,10 +607,12 @@ function renderChart() {
         data: deptDaily[`${storeId}|${deptId}`].slice(0, currentCount),
         borderColor: storePalette[i % storePalette.length],
         backgroundColor: storePalette[i % storePalette.length] + '22',
-        borderWidth: 2,
+        borderWidth: 3,
+        borderJoinStyle: 'round',
+        borderCapStyle: 'round',
         fill: false,
         pointRadius: 0,
-        tension: 0.3
+        tension: 0.45
       }));
       legendItems = datasets.map(d => ({ label: d.label, color: d.borderColor }));
       break;
@@ -652,8 +660,8 @@ function renderChart() {
             padding: 10,
             boxPadding: 4,
             usePointStyle: true,
-            titleFont: { family: "'Times New Roman', Times, Georgia, serif" },
-            bodyFont: { family: "'Times New Roman', Times, Georgia, serif" },
+            titleFont: { family: "'Patrick Hand', cursive, sans-serif", size: 14 },
+            bodyFont: { family: "'Patrick Hand', cursive, sans-serif", size: 13 },
             callbacks: {
               label: (ctx) => ` ${ctx.dataset.label}: ${fmtNum(ctx.raw)} units`
             }
@@ -664,14 +672,14 @@ function renderChart() {
             grid: { display: false },
             ticks: {
               maxTicksLimit: 8,
-              font: { family: "'Times New Roman', Times, Georgia, serif", size: 11 },
+              font: { family: "'Patrick Hand', cursive, sans-serif", size: 13 },
               color: '#8A857D'
             }
           },
           y: {
             grid: { color: 'rgba(0,0,0,0.04)' },
             ticks: {
-              font: { family: "'Times New Roman', Times, Georgia, serif", size: 11 },
+              font: { family: "'Patrick Hand', cursive, sans-serif", size: 13 },
               color: '#8A857D',
               callback: (val) => fmtNum(val)
             }
