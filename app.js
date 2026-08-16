@@ -259,7 +259,7 @@ function renderGrid(animate = true) {
     }
 
     gridEl.appendChild(tile);
-    tileElements.push({ el: tile, id: item.id, valEl: tile.querySelector('.tile-value'), lastVal: item.value });
+    tileElements.push({ el: tile, id: item.id });
   });
 
   // Scroll to top
@@ -276,25 +276,27 @@ function updateValues() {
   items.forEach(it => { lookup[it.id] = it; });
 
   let grandTotal = 0;
-  tileElements.forEach(tileObj => {
-    const item = lookup[tileObj.id];
+  tileElements.forEach(({ el, id }) => {
+    const item = lookup[id];
     if (!item) return;
+    const valEl = el.querySelector('.tile-value');
+    const oldVal = parseInt(valEl.dataset.raw) || 0;
     const newVal = item.value;
     grandTotal += newVal;
 
-    if (tileObj.lastVal !== newVal) {
-      tileObj.lastVal = newVal;
-      tileObj.valEl.textContent = fmtNum(newVal);
-      tileObj.valEl.classList.remove('value-pop');
-      void tileObj.valEl.offsetWidth; // Force reflow for re-triggering animation
-      tileObj.valEl.classList.add('value-pop');
+    if (oldVal !== newVal) {
+      valEl.dataset.raw = newVal;
+      valEl.textContent = fmtNum(newVal);
+      valEl.classList.remove('value-pop');
+      void valEl.offsetWidth; // Force reflow for re-triggering animation
+      valEl.classList.add('value-pop');
     }
 
     // Update translucent heatmap background color for levels after states
     if (currentLevel !== 'states' && item.intensity !== undefined) {
       const alpha = 0.05 + item.intensity * 0.32;
       const hexAlpha = Math.round(alpha * 255).toString(16).padStart(2, '0');
-      tileObj.el.style.backgroundColor = `${item.color}${hexAlpha}`;
+      el.style.backgroundColor = `${item.color}${hexAlpha}`;
     }
   });
 
@@ -722,33 +724,37 @@ function renderChart() {
       }
     });
   }
-
-  // Set fixed Y-axis scale to prevent jumping during playback
-  let globalMax = 0;
-  datasets.forEach(ds => {
-    if (ds._fullData) {
-      for (let i = 0; i < ds._fullData.length; i++) {
-        if (ds._fullData[i] > globalMax) globalMax = ds._fullData[i];
-      }
-    }
-  });
-  if (chartInstance) {
-    chartInstance.options.scales.y.min = 0;
-    chartInstance.options.scales.y.max = Math.ceil(globalMax * 1.08) || 100;
-    chartInstance.update('none');
-  }
 }
 
 function updateChartMarker() {
   if (!chartInstance || currentLevel === 'items') return;
 
   const currentCount = currentDay + 1;
+  let activeMin = Infinity;
+  let activeMax = -Infinity;
 
   chartInstance.data.datasets.forEach(ds => {
     if (ds._fullData) {
       ds.data = ds._fullData.slice(0, currentCount);
+      for (let i = 0; i < ds.data.length; i++) {
+        const v = ds.data[i];
+        if (v !== undefined && v !== null && !isNaN(v)) {
+          if (v < activeMin) activeMin = v;
+          if (v > activeMax) activeMax = v;
+        }
+      }
     }
   });
+
+  if (activeMin === Infinity) activeMin = 0;
+  if (activeMax === -Infinity) activeMax = 100;
+
+  // Dynamic auto-zoom: scale Y-axis bounds to fit visible sales window nicely
+  const yMin = Math.max(0, Math.floor(activeMin * 0.92));
+  const yMax = Math.ceil(activeMax * 1.08);
+
+  chartInstance.options.scales.y.min = yMin;
+  chartInstance.options.scales.y.max = yMax;
 
   chartInstance.update('none');
 }
