@@ -16,7 +16,7 @@ const STATE_EMOJI = { CA: '🌴', TX: '🤠', WI: '🧀' };
 const CAT_EMOJI   = { FOODS: '🍔', HOBBIES: '🎨', HOUSEHOLD: '🏠' };
 
 // ── State ─────────────────────────────────────────────────────────────
-let dates, stateDaily, storeDaily, categoryDaily, deptDaily, itemsSummary, hierarchy;
+let dates, stateDaily, storeDaily, categoryDaily, deptDaily, itemsSummary, hierarchy, edaResults;
 let currentLevel = 'states';   // states | stores | categories | departments | items
 let currentPath  = [];          // e.g. ['CA','CA_1','FOODS','FOODS_1']
 let currentDay   = 0;
@@ -48,6 +48,8 @@ async function loadItemDaily(storeId, deptId) {
   return itemDailyCache[key];
 }
 
+let currentSmoothing = 'raw';  // 'raw' | 'rm7' | 'rm28'
+
 // ── DOM refs ──────────────────────────────────────────────────────────
 const $ = (id) => document.getElementById(id);
 const gridEl      = $('grid');
@@ -71,6 +73,14 @@ const chartTitle    = $('chart-title');
 const chartSubtitle = $('chart-subtitle');
 const chartLegend   = $('chart-legend');
 const chartWrapper  = $('chart-wrapper');
+const chartCanvas   = $('chart');
+
+const edaModal = $('eda-modal');
+const edaTableBody = $('eda-table-body');
+const edaModalSub = $('eda-modal-subtitle');
+const btnEdaClose = $('eda-modal-close');
+const gearIcon = $('eda-gear-icon');
+const smoothingBtns = document.querySelectorAll('.btn-smoothing');
 
 // ── Helpers ───────────────────────────────────────────────────────────
 function fmtDate(iso) {
@@ -109,7 +119,7 @@ function getMaxValue(items) {
 // ── Data Loading ──────────────────────────────────────────────────────
 async function loadData() {
   const load = (f) => fetch(`data/${f}`).then(r => r.json());
-  [dates, stateDaily, storeDaily, categoryDaily, deptDaily, itemsSummary, hierarchy] =
+  [dates, stateDaily, storeDaily, categoryDaily, deptDaily, itemsSummary, hierarchy, edaResults] =
     await Promise.all([
       load('dates.json'),
       load('state_daily.json'),
@@ -118,6 +128,7 @@ async function loadData() {
       load('dept_daily.json'),
       load('items_summary.json'),
       load('hierarchy.json'),
+      load('eda_results.json')
     ]);
   sliderEl.max = dates.length - 1;
 }
@@ -527,6 +538,11 @@ function renderChart() {
 
   const storePalette = ['#A8D8EA', '#FFAAA5', '#B5EAD7', '#FFD3B4'];
 
+  function getData(id, raw) {
+    if (currentSmoothing === 'raw' || !edaResults || !edaResults[id] || !edaResults[id][currentSmoothing]) return raw;
+    return edaResults[id][currentSmoothing];
+  }
+
   // Slice datasets up to currentDay so the plot grows live as the slider moves
   const currentCount = currentDay + 1;
 
@@ -534,11 +550,13 @@ function renderChart() {
     case 'states':
       title = 'State Sales Trends Over Time';
       subtitle = 'Daily unit sales across California, Texas, and Wisconsin';
-      datasets = Object.keys(hierarchy.states).map(st => ({
-        label: hierarchy.states[st].name,
-        _fullData: stateDaily[st],
-        data: stateDaily[st].slice(0, currentCount),
-        borderColor: COLORS[st],
+      datasets = Object.keys(hierarchy.states).map(st => {
+        const d = getData(st, stateDaily[st]);
+        return {
+          label: hierarchy.states[st].name,
+          _fullData: d,
+          data: d.slice(0, currentCount),
+          borderColor: COLORS[st],
         backgroundColor: COLORS[st] + '22',
         borderWidth: 3,
         borderJoinStyle: 'round',
@@ -546,7 +564,8 @@ function renderChart() {
         fill: true,
         pointRadius: 0,
         tension: 0.45
-      }));
+        };
+      });
       legendItems = datasets.map(d => ({ label: d.label, color: d.borderColor }));
       break;
 
@@ -556,11 +575,13 @@ function renderChart() {
       title = `${stName} Store Sales Trends`;
       subtitle = `Comparing daily sales performance across stores in ${stName}`;
       const stores = hierarchy.states[stateId]?.stores || [];
-      datasets = stores.map((sid, i) => ({
-        label: sid.replace('_', ' #'),
-        _fullData: storeDaily[sid],
-        data: storeDaily[sid].slice(0, currentCount),
-        borderColor: storePalette[i % storePalette.length],
+      datasets = stores.map((sid, i) => {
+        const d = getData(sid, storeDaily[sid]);
+        return {
+          label: sid.replace('_', ' #'),
+          _fullData: d,
+          data: d.slice(0, currentCount),
+          borderColor: storePalette[i % storePalette.length],
         backgroundColor: storePalette[i % storePalette.length] + '22',
         borderWidth: 3,
         borderJoinStyle: 'round',
@@ -568,7 +589,8 @@ function renderChart() {
         fill: false,
         pointRadius: 0,
         tension: 0.45
-      }));
+        };
+      });
       legendItems = datasets.map(d => ({ label: d.label, color: d.borderColor }));
       break;
     }
@@ -577,11 +599,14 @@ function renderChart() {
       const storeId = currentPath[1];
       title = `Category Sales Trends at ${storeId.replace('_', ' #')}`;
       subtitle = 'Daily unit sales for Foods, Hobbies, and Household';
-      datasets = Object.keys(hierarchy.categories).map(catId => ({
-        label: hierarchy.categories[catId].name,
-        _fullData: categoryDaily[`${storeId}|${catId}`],
-        data: categoryDaily[`${storeId}|${catId}`].slice(0, currentCount),
-        borderColor: COLORS[catId],
+      datasets = Object.keys(hierarchy.categories).map(catId => {
+        const id = `${storeId}|${catId}`;
+        const d = getData(id, categoryDaily[id]);
+        return {
+          label: hierarchy.categories[catId].name,
+          _fullData: d,
+          data: d.slice(0, currentCount),
+          borderColor: COLORS[catId],
         backgroundColor: COLORS[catId] + '22',
         borderWidth: 3,
         borderJoinStyle: 'round',
@@ -589,7 +614,8 @@ function renderChart() {
         fill: true,
         pointRadius: 0,
         tension: 0.45
-      }));
+        };
+      });
       legendItems = datasets.map(d => ({ label: d.label, color: d.borderColor }));
       break;
     }
@@ -601,11 +627,14 @@ function renderChart() {
       title = `${catName} Department Trends at ${storeId.replace('_', ' #')}`;
       subtitle = 'Comparing department sales over time';
       const depts = hierarchy.categories[catId]?.departments || [];
-      datasets = depts.map((deptId, i) => ({
-        label: deptId.replace('_', ' '),
-        _fullData: deptDaily[`${storeId}|${deptId}`],
-        data: deptDaily[`${storeId}|${deptId}`].slice(0, currentCount),
-        borderColor: storePalette[i % storePalette.length],
+      datasets = depts.map((deptId, i) => {
+        const id = `${storeId}|${deptId}`;
+        const d = getData(id, deptDaily[id]);
+        return {
+          label: deptId.replace('_', ' '),
+          _fullData: d,
+          data: d.slice(0, currentCount),
+          borderColor: storePalette[i % storePalette.length],
         backgroundColor: storePalette[i % storePalette.length] + '22',
         borderWidth: 3,
         borderJoinStyle: 'round',
@@ -613,7 +642,8 @@ function renderChart() {
         fill: false,
         pointRadius: 0,
         tension: 0.45
-      }));
+        };
+      });
       legendItems = datasets.map(d => ({ label: d.label, color: d.borderColor }));
       break;
     }
@@ -673,7 +703,13 @@ function renderChart() {
             ticks: {
               maxTicksLimit: 8,
               font: { family: "'Patrick Hand', cursive, sans-serif", size: 13 },
-              color: '#8A857D'
+              color: '#8A857D',
+              callback: function(val, index) {
+                const d = dates[val];
+                if (!d) return '';
+                const dateObj = new Date(d + 'T00:00:00');
+                return dateObj.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+              }
             }
           },
           y: {
@@ -764,6 +800,197 @@ async function init() {
       } else if (e.key === 'Escape' || e.key === 'Backspace') {
         drillUp();
       }
+    });
+
+    let acfChartInstance = null;
+    const acfCanvas = $('acf-chart');
+
+    function computeACF(data, maxLag = 28) {
+      if (!data || data.length === 0) return Array(maxLag).fill(0);
+      const mean = data.reduce((a, b) => a + b, 0) / data.length;
+      let variance = 0;
+      for (let i = 0; i < data.length; i++) {
+        variance += (data[i] - mean) ** 2;
+      }
+      if (variance === 0) return Array(maxLag).fill(0);
+      const acf = [];
+      for (let lag = 1; lag <= maxLag; lag++) {
+        let cov = 0;
+        for (let i = 0; i < data.length - lag; i++) {
+          cov += (data[i] - mean) * (data[i + lag] - mean);
+        }
+        acf.push(cov / variance);
+      }
+      return acf;
+    }
+
+    function getRawDataForContext() {
+      let currentId = 'total';
+      if (currentLevel === 'stores') currentId = currentPath[0];
+      else if (currentLevel === 'categories') currentId = currentPath[1];
+      else if (currentLevel === 'departments') currentId = `${currentPath[1]}|${currentPath[2]}`;
+      else if (currentLevel === 'items') currentId = `${currentPath[1]}|${currentPath[3]}`;
+
+      if (currentId === 'total') {
+        const states = Object.values(stateDaily);
+        const total = new Array(dates.length).fill(0);
+        for (let i = 0; i < dates.length; i++) {
+          for (const s of states) total[i] += s[i];
+        }
+        return total;
+      }
+      if (currentLevel === 'stores') return stateDaily[currentId];
+      if (currentLevel === 'categories') return storeDaily[currentId];
+      if (currentLevel === 'departments') return categoryDaily[currentId];
+      if (currentLevel === 'items') return deptDaily[currentId];
+      return [];
+    }
+
+    // EDA Modal Logic
+    if (gearIcon) {
+      gearIcon.addEventListener('click', () => {
+        let currentId = 'total';
+        let contextName = 'Global Total';
+
+        if (currentLevel === 'stores') {
+          currentId = currentPath[0];
+          contextName = hierarchy.states[currentId]?.name || currentId;
+        } else if (currentLevel === 'categories') {
+          currentId = currentPath[1];
+          contextName = `Store ${currentId.replace('_', ' #')}`;
+        } else if (currentLevel === 'departments') {
+          currentId = `${currentPath[1]}|${currentPath[2]}`;
+          contextName = `${currentPath[1].replace('_', ' #')} - ${hierarchy.categories[currentPath[2]]?.name || currentPath[2]}`;
+        } else if (currentLevel === 'items') {
+          currentId = `${currentPath[1]}|${currentPath[3]}`;
+          contextName = `${currentPath[1].replace('_', ' #')} - ${currentPath[3].replace('_', ' ')}`;
+        }
+
+        edaModalSub.textContent = `Context: ${contextName}`;
+        const edaVisuals = $('eda-visuals');
+        if (!edaVisuals) return;
+        edaVisuals.innerHTML = '';
+        
+        const results = edaResults[currentId]?.eda || [];
+        const confirmed = results.filter(r => 
+          r.status === 'CONFIRMED' && 
+          !r.pattern.includes('Christmas') && 
+          !r.pattern.includes('Zero')
+        );
+
+        if (confirmed.length === 0) {
+          edaVisuals.innerHTML = `<p style="text-align:center;width:100%;color:#666">No confirmed EDA patterns for this context.</p>`;
+          edaModal.showModal();
+          return;
+        }
+
+        const rawData = getRawDataForContext();
+        
+        if (window.edaChartInstances) {
+          window.edaChartInstances.forEach(c => c.destroy());
+        }
+        window.edaChartInstances = [];
+
+        confirmed.forEach((res, i) => {
+          const canvasId = `eda-canvas-${i}`;
+          
+          const card = document.createElement('div');
+          card.className = 'eda-card';
+          card.innerHTML = `
+            <h3>${res.pattern}</h3>
+            <p>${res.evidence}</p>
+            <div class="eda-chart-wrap">
+              <canvas id="${canvasId}"></canvas>
+            </div>
+          `;
+          edaVisuals.appendChild(card);
+          
+          const ctx = document.getElementById(canvasId).getContext('2d');
+          
+          if (res.pattern.includes('Seasonality')) {
+            const dow = [0,0,0,0,0,0,0];
+            const counts = [0,0,0,0,0,0,0];
+            for (let j=0; j<rawData.length; j++) {
+               const d = new Date(dates[j] + 'T00:00:00').getDay();
+               dow[d] += rawData[j];
+               counts[d]++;
+            }
+            const avg = dow.map((v, i) => v / (counts[i]||1));
+            const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const data = [avg[1], avg[2], avg[3], avg[4], avg[5], avg[6], avg[0]];
+            window.edaChartInstances.push(new Chart(ctx, {
+              type: 'bar',
+              data: {
+                labels,
+                datasets: [{ label: 'Avg Sales', data, backgroundColor: 'rgba(133, 227, 255, 0.8)', borderRadius: 4 }]
+              },
+              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            }));
+          } else if (res.pattern.includes('Trend') || res.pattern.includes('Avg')) {
+            const acf = computeACF(rawData);
+            const labels = Array.from({length: 28}, (_, k) => k+1);
+            const bg = acf.map(v => v > 0.2 ? 'rgba(156, 136, 255, 0.8)' : 'rgba(156, 136, 255, 0.3)');
+            window.edaChartInstances.push(new Chart(ctx, {
+              type: 'bar',
+              data: { labels, datasets: [{ label: 'ACF', data: acf, backgroundColor: bg, borderRadius: 4 }] },
+              options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: -0.5, max: 1 }, x: { display: false } }, plugins: { legend: { display: false } } }
+            }));
+          } else if (res.pattern.includes('SNAP')) {
+             const match = res.evidence.match(/SNAP avg: ([\d.,]+), Non-SNAP avg: ([\d.,]+)/);
+             let snapAvg = 0, nonSnapAvg = 0;
+             if (match) {
+                snapAvg = parseFloat(match[1].replace(/,/g, ''));
+                nonSnapAvg = parseFloat(match[2].replace(/,/g, ''));
+             }
+             window.edaChartInstances.push(new Chart(ctx, {
+              type: 'bar',
+              data: {
+                labels: ['SNAP Days', 'Non-SNAP Days'],
+                datasets: [{
+                  label: 'Avg Sales',
+                  data: [snapAvg, nonSnapAvg],
+                  backgroundColor: ['rgba(181, 234, 215, 0.8)', 'rgba(213, 170, 255, 0.8)'],
+                  borderRadius: 4
+                }]
+              },
+              options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Average Sales' }
+                  }
+                }
+              }
+            }));
+          } else {
+             // Fallback
+             window.edaChartInstances.push(new Chart(ctx, {
+              type: 'bar',
+              data: { labels: ['Value'], datasets: [{ data: [1], backgroundColor: '#ddd' }] },
+              options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            }));
+          }
+        });
+        
+        edaModal.showModal();
+      });
+    }
+
+    if (btnEdaClose) {
+      btnEdaClose.addEventListener('click', () => edaModal.close());
+    }
+
+    // Smoothing Toggles
+    smoothingBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        smoothingBtns.forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentSmoothing = e.target.getAttribute('data-smooth'); // 'raw', 'rm7', 'rm28'
+        renderChart();
+      });
     });
 
   } catch (err) {

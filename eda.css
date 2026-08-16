@@ -1,0 +1,104 @@
+/* EDA Modal Styles */
+.eda-modal {
+  border: none;
+  border-radius: 12px 255px 15px 225px / 255px 15px 225px 15px;
+  background: var(--white);
+  padding: 0;
+  box-shadow: 4px 6px 0 rgba(0,0,0,0.15);
+  max-width: 900px;
+  width: 90%;
+  border: 3px solid var(--text-dark);
+}
+
+.eda-modal::backdrop {
+  background: rgba(250, 248, 243, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.eda-modal-content {
+  padding: 24px;
+}
+
+.eda-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 2px solid var(--text-dark);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.eda-modal-header h2 {
+  font-family: 'Patrick Hand SC', cursive, 'Inter', sans-serif;
+  margin: 0;
+  font-size: 1.8rem;
+  color: var(--text-dark);
+}
+
+.eda-modal-subtitle {
+  font-size: 1rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.eda-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Patrick Hand SC', cursive, 'Inter', sans-serif;
+}
+
+.eda-table th, .eda-table td {
+  padding: 12px;
+  border-bottom: 1px dashed rgba(0,0,0,0.1);
+  text-align: left;
+}
+
+.eda-table th {
+  font-weight: 700;
+  color: var(--text-dark);
+  font-family: 'Patrick Hand SC', cursive, 'Inter', sans-serif;
+  font-size: 1.3rem;
+}
+
+.eda-table td {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.status-badge.CONFIRMED { background-color: #d4edda; color: #155724; border: 1px solid #155724; }
+.status-badge.POSSIBLE { background-color: #fff3cd; color: #856404; border: 1px solid #856404; }
+.status-badge.NOT.DETECTED { background-color: #f8d7da; color: #721c24; border: 1px solid #721c24; }
+.status-badge.INSUFFICIENT.DATA { background-color: #e2e3e5; color: #383d41; border: 1px solid #383d41; }
+
+.btn-smoothing {
+  border: 2px solid var(--text-dark);
+  background: var(--white);
+  color: var(--text-dark);
+  font-family: 'Patrick Hand SC', cursive, 'Inter', sans-serif;
+  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+  padding: 4px 12px;
+}
+
+.btn-smoothing.active {
+  background: var(--primary);
+  color: var(--white);
+}
+
+.eda-chart-section { margin-top: 24px; padding-top: 16px; border-top: 2px dashed rgba(0,0,0,0.1); }
+.eda-chart-section h3 { font-family: 'Patrick Hand SC', cursive, 'Inter', sans-serif; font-size: 1.1rem; color: #4A4A4A; margin-bottom: 12px; }
+.eda-chart-wrapper { width: 100%; height: 200px; position: relative; }
+
+#eda-visuals { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; padding: 10px; }
+.eda-card { background: white; border: 1px solid rgba(0,0,0,0.06); border-radius: 16px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+.eda-card h3 { font-family: 'Patrick Hand SC', cursive, 'Inter', sans-serif; font-size: 1.05rem; color: #444; margin: 0 0 8px 0; }
+.eda-card p { font-size: 0.9rem; color: #666; margin-bottom: 12px; }
+.eda-chart-wrap { height: 160px; position: relative; }
