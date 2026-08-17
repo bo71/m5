@@ -24,6 +24,10 @@
         <span class="header-stat-label">Date</span>
         <span class="header-stat-value" id="hdr-date">Jan 29, 2011</span>
       </div>
+      <div class="header-stat" id="hdr-event-container" style="display: none;">
+        <span class="header-stat-label">Event</span>
+        <span class="header-stat-value" id="hdr-event" style="color: #9c88ff;">-</span>
+      </div>
       <div class="header-stat">
         <span class="header-stat-label">Total Sales</span>
         <span class="header-stat-value" id="hdr-total">0</span>
@@ -105,6 +109,23 @@
       <!-- Generated dynamically -->
     </div>
   </footer>
+
+  <!-- Calendar Popup -->
+  <dialog id="calendar-modal" class="cal-modal">
+    <div class="cal-header">
+      <div style="width: 32px;"></div> <!-- Spacer to center title -->
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <button id="cal-prev" class="btn btn-cal">&lt;</button>
+        <div id="cal-month-year" class="cal-month-year">Jan 2011</div>
+        <button id="cal-next" class="btn btn-cal">&gt;</button>
+      </div>
+      <button id="cal-close" class="btn btn-cal">&times;</button>
+    </div>
+    <div class="cal-grid-header">
+      <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+    </div>
+    <div id="cal-grid" class="cal-grid"></div>
+  </dialog>
 
   <!-- EDA Pattern Checks Modal -->
   <dialog id="eda-modal" class="eda-modal">

@@ -79,8 +79,22 @@ const edaModal = $('eda-modal');
 const edaTableBody = $('eda-table-body');
 const edaModalSub = $('eda-modal-subtitle');
 const btnEdaClose = $('eda-modal-close');
+const hdrEventContainer = $('hdr-event-container');
+const hdrEvent     = $('hdr-event');
 const gearIcon = $('eda-gear-icon');
 const smoothingBtns = document.querySelectorAll('.btn-smoothing');
+
+let eventsData;
+let dateToIndex = {};
+
+// Calendar DOM
+const calModal = $('calendar-modal');
+const calGrid = $('cal-grid');
+const calMonthYear = $('cal-month-year');
+const btnCalPrev = $('cal-prev');
+const btnCalNext = $('cal-next');
+const btnCalClose = $('cal-close');
+let currentCalDate = new Date();
 
 // ── Helpers ───────────────────────────────────────────────────────────
 function fmtDate(iso) {
@@ -119,7 +133,7 @@ function getMaxValue(items) {
 // ── Data Loading ──────────────────────────────────────────────────────
 async function loadData() {
   const load = (f) => fetch(`data/${f}`).then(r => r.json());
-  [dates, stateDaily, storeDaily, categoryDaily, deptDaily, itemsSummary, hierarchy, edaResults] =
+  [dates, stateDaily, storeDaily, categoryDaily, deptDaily, itemsSummary, hierarchy, edaResults, eventsData] =
     await Promise.all([
       load('dates.json'),
       load('state_daily.json'),
@@ -128,9 +142,15 @@ async function loadData() {
       load('dept_daily.json'),
       load('items_summary.json'),
       load('hierarchy.json'),
-      load('eda_results.json')
+      load('eda_results.json'),
+      load('events.json').then(arr => {
+        const dict = {};
+        arr.forEach(ev => dict[ev.day] = ev);
+        return dict;
+      })
     ]);
   sliderEl.max = dates.length - 1;
+  dates.forEach((d, i) => { dateToIndex[d] = i; });
 }
 
 // ── Get items for current view ────────────────────────────────────────
@@ -408,11 +428,29 @@ function updateLevelInfo() {
 
 // ── Day / Slider ──────────────────────────────────────────────────────
 function updateDayDisplay() {
-  const iso = dates[currentDay];
-  const pretty = fmtDate(iso);
+  const dateObj = new Date(dates[currentDay] + 'T00:00:00');
+  const pretty = dateObj.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
   hdrDate.textContent = pretty;
   timelineDate.textContent = pretty;
   dayCounter.textContent = currentDay + 1;
+
+  let activeEvent = null;
+  if (eventsData) {
+    for (let offset = -2; offset <= 2; offset++) {
+      if (eventsData[currentDay + offset]) {
+        activeEvent = eventsData[currentDay + offset];
+        break;
+      }
+    }
+  }
+
+  if (activeEvent) {
+    hdrEventContainer.style.display = 'flex';
+    const typeEmoji = activeEvent.type === 'Sporting' ? '🏈' : activeEvent.type === 'Cultural' ? '🎉' : activeEvent.type === 'National' ? '🇺🇸' : '🕌';
+    hdrEvent.textContent = `${typeEmoji} ${activeEvent.name}`;
+  } else {
+    hdrEventContainer.style.display = 'none';
+  }
 
   // Slider fill
   const pct = (currentDay / (dates.length - 1)) * 100;
@@ -427,6 +465,7 @@ function onSliderInput() {
   updateDayDisplay();
   updateValues();
 }
+
 
 // ── Playback ──────────────────────────────────────────────────────────
 function togglePlay() {
@@ -693,6 +732,16 @@ function renderChart() {
             titleFont: { family: "'Patrick Hand', cursive, sans-serif", size: 14 },
             bodyFont: { family: "'Patrick Hand', cursive, sans-serif", size: 13 },
             callbacks: {
+              title: function(context) {
+                let title = context[0].label;
+                const idx = context[0].dataIndex;
+                if (eventsData && eventsData[idx]) {
+                   const ev = eventsData[idx];
+                   const typeEmoji = ev.type === 'Sporting' ? '🏈' : ev.type === 'Cultural' ? '🎉' : ev.type === 'National' ? '🇺🇸' : '🕌';
+                   title += `  |  ${typeEmoji} ${ev.name}`;
+                }
+                return title;
+              },
               label: (ctx) => ` ${ctx.dataset.label}: ${fmtNum(ctx.raw)} units`
             }
           }
@@ -759,6 +808,68 @@ function updateChartMarker() {
   chartInstance.update('none');
 }
 
+function openCalendar() {
+  const currentIso = dates[currentDay];
+  if (currentIso) {
+    const d = new Date(currentIso + 'T00:00:00');
+    currentCalDate = new Date(d.getFullYear(), d.getMonth(), 1);
+  }
+  renderCalendarMonth(currentCalDate.getFullYear(), currentCalDate.getMonth());
+  calModal.showModal();
+}
+
+function renderCalendarMonth(year, month) {
+  calMonthYear.textContent = new Date(year, month, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  calGrid.innerHTML = '';
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) {
+    const emptyCell = document.createElement('div');
+    emptyCell.className = 'cal-cell disabled';
+    calGrid.appendChild(emptyCell);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell';
+    cell.textContent = d;
+
+    const mm = String(month + 1).padStart(2, '0');
+    const dd = String(d).padStart(2, '0');
+    const isoString = `${year}-${mm}-${dd}`;
+
+    const dayIdx = dateToIndex[isoString];
+
+    if (dayIdx === undefined) {
+      cell.classList.add('disabled');
+    } else {
+      if (dayIdx === currentDay) {
+        cell.classList.add('active');
+      }
+      if (eventsData && eventsData[dayIdx]) {
+        const type = eventsData[dayIdx].type;
+        const dot = document.createElement('div');
+        dot.className = 'cal-event-dot';
+        if (type === 'Sporting') dot.style.backgroundColor = '#FFAAA5';
+        else if (type === 'Cultural') dot.style.backgroundColor = '#D5AAFF';
+        else if (type === 'National') dot.style.backgroundColor = '#A8D8EA';
+        else dot.style.backgroundColor = '#FFD3B4';
+        cell.appendChild(dot);
+      }
+      cell.addEventListener('click', () => {
+        currentDay = dayIdx;
+        sliderEl.value = currentDay;
+        updateDayDisplay();
+        updateValues();
+        calModal.close();
+      });
+    }
+    calGrid.appendChild(cell);
+  }
+}
+
 // ── Init ──────────────────────────────────────────────────────────────
 async function init() {
   try {
@@ -781,6 +892,31 @@ async function init() {
     playBtn.addEventListener('click', togglePlay);
     speedBtn.addEventListener('click', cycleSpeed);
     backBtn.addEventListener('click', drillUp);
+
+    // Calendar Listeners
+    if (hdrDate) {
+      hdrDate.style.cursor = 'pointer';
+      hdrDate.addEventListener('click', openCalendar);
+    }
+    if (timelineDate) {
+      timelineDate.style.cursor = 'pointer';
+      timelineDate.addEventListener('click', openCalendar);
+    }
+    if (btnCalClose) {
+      btnCalClose.addEventListener('click', () => calModal.close());
+    }
+    if (btnCalPrev) {
+      btnCalPrev.addEventListener('click', () => {
+        currentCalDate.setMonth(currentCalDate.getMonth() - 1);
+        renderCalendarMonth(currentCalDate.getFullYear(), currentCalDate.getMonth());
+      });
+    }
+    if (btnCalNext) {
+      btnCalNext.addEventListener('click', () => {
+        currentCalDate.setMonth(currentCalDate.getMonth() + 1);
+        renderCalendarMonth(currentCalDate.getFullYear(), currentCalDate.getMonth());
+      });
+    }
 
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
